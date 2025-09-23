@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Text;
+using static Incinerator;
 
 namespace ValheimRcon.Core
 {
@@ -62,9 +63,15 @@ namespace ValheimRcon.Core
 
         public RconPacket(int requestId, PacketType type, string payload)
         {
+            /*
             if (payload != null && GetPayloadSize(payload) > 4096)
                 throw new ArgumentException("Payload too large", nameof(payload));
-            
+            */
+            int MaxPayloadSize = 4050;
+            if (payload != null && GetPayloadSize(payload) > MaxPayloadSize)
+            {
+                payload = payload.Substring(0, MaxPayloadSize) + "\n---Truncated---";
+            }
             this.requestId = requestId;
             this.type = type;
             this.payload = payload ?? string.Empty;

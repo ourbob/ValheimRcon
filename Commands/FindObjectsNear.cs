@@ -23,6 +23,7 @@ namespace ValheimRcon.Commands
             long? creatorId = null;
             ObjectId? id = null;
             string tag = string.Empty;
+            string prefab = string.Empty;
 
             var optionalArgs = args.GetOptionalArguments();
             foreach (var index in optionalArgs)
@@ -39,6 +40,9 @@ namespace ValheimRcon.Commands
                     case "-tag":
                         tag = args.GetString(index + 1);
                         break;
+                    case "-prefab":
+                        prefab = args.GetString(index + 1);
+                        break;
                     default:
                         return $"Unknown argument: {argument}";
                 }
@@ -52,7 +56,7 @@ namespace ValheimRcon.Commands
                         return false;
                     }
 
-                    return ZdoUtils.MatchesCriteria(zdo, creatorId, id, tag);
+                    return ZdoUtils.MatchesCriteria(zdo, creatorId, id, tag, prefab);
                 })
                 .ToArray();
 

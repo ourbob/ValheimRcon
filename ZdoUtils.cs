@@ -96,7 +96,7 @@ namespace ValheimRcon
             return true;
         }
 
-        public static bool MatchesCriteria(ZDO zdo, long? creatorId, ObjectId? id, string tag)
+        public static bool MatchesCriteria(ZDO zdo, long? creatorId, ObjectId? id, string tag, string prefab = null)
         {
             if (creatorId.HasValue && zdo.GetLong(ZDOVars.s_creator) != creatorId.Value)
             {
@@ -107,6 +107,10 @@ namespace ValheimRcon
                 return false;
             }
             if (!string.IsNullOrEmpty(tag) && zdo.GetTag() != tag)
+            {
+                return false;
+            }
+            if (!string.IsNullOrEmpty(prefab) && GetPrefabName(zdo.GetPrefab()) != prefab)
             {
                 return false;
             }

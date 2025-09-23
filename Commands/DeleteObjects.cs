@@ -11,7 +11,8 @@ namespace ValheimRcon.Commands
             "Usage (with optional arguments): deleteObjects " +
             "-creator <creator id> " +
             "-id <id> <userid> " +
-            "-tag <tag>";
+            "-tag <tag> " +
+            "-override";
 
         protected override string OnHandle(CommandArgs args)
         {
@@ -25,6 +26,7 @@ namespace ValheimRcon.Commands
             long? creatorId = null;
             ObjectId? id = null;
             var tag = string.Empty;
+            bool overrideAllowed = false;
 
             foreach (var index in optionalArgs)
             {
@@ -39,6 +41,9 @@ namespace ValheimRcon.Commands
                         break;
                     case "-tag":
                         tag = args.GetString(index + 1);
+                        break;
+                    case "-override":
+                        overrideAllowed = true;
                         break;
                     default:
                         return $"Unknown argument: {argument}";
@@ -69,9 +74,17 @@ namespace ValheimRcon.Commands
                 }
                 else
                 {
-                    sb.AppendLine(" [NOT ALLOWED TO DELETE]");
+                    if (overrideAllowed)
+                    {
+                        sb.AppendLine(" [WARNING: NOT ALLOWED TO DELETE, OVERRISE SET SO DOING IT ANYWAY!]");
+                        zdo.SetOwner(0);
+                        ZDOMan.instance.m_destroySendList.Add(zdo.m_uid);
+                    }
+                    else
+                    {
+                        sb.AppendLine(" [ERROR: NOT ALLOWED TO DELETE, try with -override if you are sure you want to delete this]");
+                    }
                 }
-
                 sb.AppendLine();
             }
             return sb.ToString().TrimEnd();
