@@ -18,7 +18,8 @@ namespace ValheimRcon.Commands
             "-sethealth <health> " +
             "-enable " +
             "-disable " +
-            "-preventremoval (not working yet)";
+            "-preventremoval (not working yet)" +
+            "-removeattachment (not working yet)";
 
         protected override string OnHandle(CommandArgs args)
         {
@@ -39,6 +40,7 @@ namespace ValheimRcon.Commands
             bool preventRemoval = false;
             bool disable = false;
             bool enable = false;
+            bool removeAttachment = false;
 
             foreach (var index in optionalArgs)
             {
@@ -69,6 +71,9 @@ namespace ValheimRcon.Commands
                         break;
                     case "-disable":
                         disable = true;
+                        break;
+                    case "-removeattachment":
+                        removeAttachment = true;
                         break;
                     default:
                         return $"Unknown argument: {argument}";
@@ -102,19 +107,31 @@ namespace ValheimRcon.Commands
                 {
                     zdo.Set(ZDOVars.s_health, newHealth);
                 }
-                if (preventRemoval)
-                {
-                    zdo.Persistent = true;
-                    /*
-                    ZNetView znv = ZNetScene.instance.FindInstance(zdo); // TODO: NOT WORKING
-                    if (znv == null)
+                ZNetView znv = ZNetScene.instance.FindInstance(zdo);
+                if (removeAttachment) {  // TODO: Not working - Intended for removing trophies from spawn
+                    sb.AppendLine("[INFO: Trying to remobe attachment]");
+                    ItemStand holder = znv.gameObject.GetComponentInChildren<ItemStand>();
+                    if (holder == null)
                     {
-                        sb.AppendLine();
-                        sb.AppendLine("[ERROR: Cannot find object instance]");
+                        sb.AppendLine("[ERROR: ItemStand component is null]");
                     }
                     else
                     {
-                        Piece piece = znv.GetComponent<Piece>();
+                        sb.AppendLine("[INFO: REMOVING]");
+                        holder.DropItem();
+                    }
+                }
+                if (preventRemoval)  // TODO: Not working
+                {
+                    zdo.Persistent = true;
+                    if (znv.gameObject == null)
+                    {
+                        sb.AppendLine();
+                        sb.AppendLine("[ERROR: Cannot find prefab / gameobject]");
+                    }
+                    else
+                    {
+                        Piece piece = znv.gameObject.GetComponentInChildren<Piece>();
                         if (piece == null)
                         {
                             sb.AppendLine();
@@ -124,7 +141,7 @@ namespace ValheimRcon.Commands
                         {
                             piece.m_canBeRemoved = false;
                         }
-                        WearNTear wearAndTear = znv.GetComponent<WearNTear>();
+                        WearNTear wearAndTear = znv.gameObject.GetComponentInChildren<WearNTear>();
                         if (wearAndTear == null)
                         {
                             sb.AppendLine();
@@ -137,7 +154,6 @@ namespace ValheimRcon.Commands
                             wearAndTear.m_noSupportWear = true;
                         }
                     }
-                    */
                 }
                 sb.AppendLine();
                 sb.AppendLine("->");
