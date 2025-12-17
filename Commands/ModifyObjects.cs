@@ -18,7 +18,8 @@ namespace ValheimRcon.Commands
             "-sethealth <health> " +
             "-enable " +
             "-disable " +
-            "-preventremoval (not working yet)" +
+            "-setprefab " +
+            "-preventremoval (not working yet) " +
             "-removeattachment (not working yet)";
 
         protected override string OnHandle(CommandArgs args)
@@ -37,11 +38,14 @@ namespace ValheimRcon.Commands
 
             bool setHealth = false;
             float newHealth = 0;
+            string setTag = null;
             bool preventRemoval = false;
             bool disable = false;
             bool enable = false;
+            String setprefab = string.Empty;
             bool removeAttachment = false;
-
+            
+            
             foreach (var index in optionalArgs)
             {
                 var argument = args.GetString(index);
@@ -63,6 +67,9 @@ namespace ValheimRcon.Commands
                         setHealth = true;
                         newHealth = args.GetFloat(index + 1);
                         break;
+                    case "-settag":
+                        setTag = args.GetString(index + 1);
+                        break;
                     case "-preventremoval":
                         preventRemoval = true;
                         break;
@@ -74,6 +81,9 @@ namespace ValheimRcon.Commands
                         break;
                     case "-removeattachment":
                         removeAttachment = true;
+                        break;
+                    case "-setprefab":
+                        setprefab = args.GetString(index + 1);
                         break;
                     default:
                         return $"Unknown argument: {argument}";
@@ -103,13 +113,28 @@ namespace ValheimRcon.Commands
                 {
                     zdo.Set(ZDOVars.s_enabled, false);
                 }
+                if(setprefab != String.Empty)
+                {
+                    var newprefab = ZNetScene.instance.GetPrefab(setprefab);
+                    if (newprefab == null) return $"Prefab {setprefab} not found";
+                    zdo.SetPrefab(newprefab.name.GetStableHashCode());
+                }
                 if (setHealth)
                 {
                     zdo.Set(ZDOVars.s_health, newHealth);
                 }
+                if(setTag != null)
+                {
+                    zdo.SetTag(setTag);
+                }
+                /*
                 ZNetView znv = ZNetScene.instance.FindInstance(zdo);
+                if (znv == null) {
+                    sb.AppendLine("[ERROR: Cannot get ZNetView from ZNetScene for ZDO]");
+                    continue;
+                }
                 if (removeAttachment) {  // TODO: Not working - Intended for removing trophies from spawn
-                    sb.AppendLine("[INFO: Trying to remobe attachment]");
+                    sb.AppendLine("[INFO: Trying to remove attachment]");
                     ItemStand holder = znv.gameObject.GetComponentInChildren<ItemStand>();
                     if (holder == null)
                     {
@@ -155,8 +180,9 @@ namespace ValheimRcon.Commands
                         }
                     }
                 }
+                */
                 sb.AppendLine();
-                sb.AppendLine("->");
+                sb.AppendLine("---->");
                 ZdoUtils.AppendZdoStats(zdo, sb);
                 sb.AppendLine();
             }

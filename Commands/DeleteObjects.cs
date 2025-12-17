@@ -12,6 +12,7 @@ namespace ValheimRcon.Commands
             "-creator <creator id> " +
             "-id <id> <userid> " +
             "-tag <tag> " +
+            "-prefab <prefab> " +
             "-override";
 
         protected override string OnHandle(CommandArgs args)
@@ -26,6 +27,7 @@ namespace ValheimRcon.Commands
             long? creatorId = null;
             ObjectId? id = null;
             var tag = string.Empty;
+            var prefab = string.Empty;
             bool overrideAllowed = false;
 
             foreach (var index in optionalArgs)
@@ -42,6 +44,9 @@ namespace ValheimRcon.Commands
                     case "-tag":
                         tag = args.GetString(index + 1);
                         break;
+                    case "-prefab":
+                        prefab = args.GetString(index + 1);
+                        break;
                     case "-override":
                         overrideAllowed = true;
                         break;
@@ -51,7 +56,7 @@ namespace ValheimRcon.Commands
             }
 
             var objects = ZDOMan.instance.m_objectsByID.Values
-                .Where(zdo => ZdoUtils.MatchesCriteria(zdo, creatorId, id, tag))
+                .Where(zdo => ZdoUtils.MatchesCriteria(zdo, creatorId, id, tag, prefab))
                 .ToArray();
 
             if (objects.Length == 0)
@@ -76,7 +81,7 @@ namespace ValheimRcon.Commands
                 {
                     if (overrideAllowed)
                     {
-                        sb.AppendLine(" [WARNING: NOT ALLOWED TO DELETE, OVERRISE SET SO DOING IT ANYWAY!]");
+                        sb.AppendLine(" [WARNING: NOT ALLOWED TO DELETE, OVERRIDE SET SO DOING IT ANYWAY!]");
                         zdo.SetOwner(0);
                         ZDOMan.instance.m_destroySendList.Add(zdo.m_uid);
                     }

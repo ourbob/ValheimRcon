@@ -17,7 +17,8 @@ namespace ValheimRcon.Commands
             "-quality <quality> " +
             "-variant <variant> " +
             "-data <key> <value> " +
-            "-nocrafter";
+            "-nocrafter " +
+            "-craftername <value";
 
         protected override string OnHandle(ZNetPeer peer, ZDO zdo, CommandArgs args)
         {
@@ -61,6 +62,10 @@ namespace ValheimRcon.Commands
                     case "-nocrafter":
                         crafterId = 0;
                         crafterName = string.Empty;
+                        break;
+                    case "-craftername":
+                        crafterId = 0;
+                        crafterName = args.GetString(index + 1);
                         break;
                     case "-data":
                         {

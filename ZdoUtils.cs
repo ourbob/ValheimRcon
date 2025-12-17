@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Emit;
 using System.Text;
+using System.Text.RegularExpressions;
+using UnityEngine.Windows;
 using ValheimRcon.Commands;
 
 namespace ValheimRcon
@@ -17,8 +20,12 @@ namespace ValheimRcon
             Character = 1 << 2,
             Building = 1 << 3,
             ItemStand = 1 << 4,
-            Destructible = 1 << 5,
-            Interactable = 1 << 6,
+            Container = 1 << 5,
+            Bed = 1 << 6,
+            Sign = 1 << 7,
+            TombStone = 1 << 8,
+            Destructible = 1 << 9,
+            Interactable = 1 << 10,
         };
 
         private static readonly Dictionary<int, Type> PrefabTypes = new Dictionary<int, Type>();
@@ -43,10 +50,14 @@ namespace ValheimRcon
 
             var prefabId = zdo.GetPrefab();
             TryAppendItemDropData(zdo, stringBuilder);
+            TryAppendBedData(zdo, stringBuilder);
+            TryAppendSignData(zdo, stringBuilder);
+            TryAppendTombstoneData(zdo, stringBuilder);
             TryAppendBuildingData(zdo, stringBuilder);
             TryAppendCharacterData(zdo, stringBuilder);
             TryAppendGuardStoneData(zdo, stringBuilder);
             TryAppendItemStandData(zdo, stringBuilder);
+            TryAppendContainerData(zdo, stringBuilder);
         }
 
         public static string GetPrefabName(int prefabId)
@@ -106,7 +117,14 @@ namespace ValheimRcon
             {
                 return false;
             }
-            if (!string.IsNullOrEmpty(tag) && zdo.GetTag() != tag)
+            if (
+                   !string.IsNullOrEmpty(tag) // It's empty
+                && (
+                       zdo.GetTag() != tag // It's tag doesn't match...
+                    && !tag.StartsWith("regex:") // ... and it's prefix isn't regex:
+                    || !Regex.IsMatch(zdo.GetTag(), tag.Replace("regex:","").Trim(), RegexOptions.IgnoreCase) // Or when striped it doesn't match as a regex
+                )
+            )
             {
                 return false;
             }
@@ -143,6 +161,36 @@ namespace ValheimRcon
             {
                 stringBuilder.Append($" '{zdo.GetString($"data_{i}")}'='{zdo.GetString($"data__{i}")}'");
             }
+        }
+        private static void TryAppendContainerData(ZDO zdo, StringBuilder stringBuilder)
+        {
+            /*
+            if (!CheckPrefabType(zdo.GetPrefab(), Type.Container))
+            {
+                return;
+            }
+            string item = zdo.GetString(ZDOVars.);
+            if (string.IsNullOrEmpty(item))
+            {
+                return;
+            }
+            stringBuilder.Append($" Attached item: {item}");
+            stringBuilder.Append($" Durability: {zdo.GetFloat(ZDOVars.s_durability)}");
+            stringBuilder.Append($" Stack: {zdo.GetInt(ZDOVars.s_stack)}");
+            stringBuilder.Append($" Quality: {zdo.GetInt(ZDOVars.s_quality)}");
+            stringBuilder.Append($" Variant: {zdo.GetInt(ZDOVars.s_variant)}");
+            stringBuilder.Append($" Crafter: {zdo.GetString(ZDOVars.s_crafterName)} ({zdo.GetLong(ZDOVars.s_crafterID)})");
+            int dataCount = zdo.GetInt(ZDOVars.s_dataCount);
+            if (dataCount > 0)
+            {
+                stringBuilder.Append($" Data:");
+            }
+            for (int i = 0; i < dataCount; i++)
+            {
+                stringBuilder.Append($" '{zdo.GetString($"data_{i}")}'='{zdo.GetString($"data__{i}")}'");
+            }
+            */
+            //stringBuilder.Append($"Item is a container!");
         }
 
         private static void TryAppendItemDropData(ZDO zdo, StringBuilder stringBuilder)
@@ -191,11 +239,62 @@ namespace ValheimRcon
             {
                 return;
             }
-
             stringBuilder.Append($" Level: {zdo.GetInt(ZDOVars.s_level)}");
             var maxHealth = zdo.GetFloat(ZDOVars.s_maxHealth);
             stringBuilder.Append($" Health: {zdo.GetFloat(ZDOVars.s_health, maxHealth)}/{maxHealth}");
-            stringBuilder.Append($" Tamed: {zdo.GetBool(ZDOVars.s_tamed)}");
+            bool tamed = zdo.GetBool(ZDOVars.s_tamed);
+            stringBuilder.Append($" Tamed: {tamed}");
+            string tamedName = zdo.GetString(ZDOVars.s_tamedName);
+            if (tamed && tamedName != null && tamedName.Length > 0) {
+                stringBuilder.Append($" Tamed Name: {tamedName} (Author {zdo.GetString(ZDOVars.s_tamedNameAuthor)})");
+            }
+        }
+
+        private static void TryAppendBedData(ZDO zdo, StringBuilder stringBuilder)
+        {
+            if (!CheckPrefabType(zdo.GetPrefab(), Type.Bed))
+            {
+                return;
+            }
+            var prefabId = zdo.GetPrefab();
+            stringBuilder.Append($" Prefab Id: {prefabId}");
+            stringBuilder.Append($" Bed Creator: {zdo.GetLong(ZDOVars.s_creator)}");
+            stringBuilder.Append($" Bed Object Owner: {zdo.GetString(ZDOVars.s_ownerName)} ({zdo.GetLong(ZDOVars.s_owner)})");
+        }
+
+        private static void TryAppendSignData(ZDO zdo, StringBuilder stringBuilder)
+        {
+            if (!CheckPrefabType(zdo.GetPrefab(), Type.Sign))
+            {
+                return;
+            }
+            var prefab = ZNetScene.instance.GetPrefab(zdo.GetPrefab());
+            stringBuilder.Append($" Sign Creator: {zdo.GetLong(ZDOVars.s_creator)}");
+            stringBuilder.Append($" Owner: {zdo.GetString(ZDOVars.s_ownerName)} ({zdo.GetLong(ZDOVars.s_owner)})");
+            if (prefab.TryGetComponent<Sign>(out Sign sign))
+            {
+                stringBuilder.Append($" Author: {zdo.GetString(ZDOVars.s_authorDisplayName)} ({zdo.GetString(ZDOVars.s_author)})");
+                if (zdo.GetString(ZDOVars.s_text) != null)
+                {
+                    stringBuilder.Append($" Text ({zdo.GetString(ZDOVars.s_text).Length}): {Regex.Replace(zdo.GetString(ZDOVars.s_text), @"[^\p{L}\p{N}<>="" ]", "")}");
+                    //stringBuilder.Append($" Text ({zdo.GetString(ZDOVars.s_text).Length}): {Regex.Replace(zdo.GetString(ZDOVars.s_text), @"[\x00-\x1F\x7F]", "")}");
+                }
+            }
+            else
+            {
+                stringBuilder.Append($" WARNING: Unable to aquire Sign component");
+            }
+
+        }
+        private static void TryAppendTombstoneData(ZDO zdo, StringBuilder stringBuilder)
+        {
+            if (!CheckPrefabType(zdo.GetPrefab(), Type.TombStone))
+            {
+                return;
+            }
+            var prefab = ZNetScene.instance.GetPrefab(zdo.GetPrefab());
+            stringBuilder.Append($" Tombstone Creator: {zdo.GetLong(ZDOVars.s_creator)}");
+            stringBuilder.Append($" Owner: {zdo.GetString(ZDOVars.s_ownerName)} ({zdo.GetLong(ZDOVars.s_owner)})");
         }
 
         private static void TryAppendBuildingData(ZDO zdo, StringBuilder stringBuilder)
@@ -242,6 +341,18 @@ namespace ValheimRcon
                 {
                     types |= Type.Character;
                 }
+                if (prefab.TryGetComponent<Bed>(out _))
+                {
+                    types |= Type.Bed;
+                }
+                if (prefab.TryGetComponent<Sign>(out _))
+                {
+                    types |= Type.Sign;
+                }
+                if (prefab.TryGetComponent<TombStone>(out _))
+                {
+                    types |= Type.TombStone;
+                }
                 if (prefab.TryGetComponent<WearNTear>(out var wearNTear))
                 {
                     types |= Type.Building;
@@ -255,6 +366,10 @@ namespace ValheimRcon
                 if (prefab.TryGetComponent<ItemStand>(out _))
                 {
                     types |= Type.ItemStand;
+                }
+                if (prefab.TryGetComponent<Container>(out _))
+                {
+                    types |= Type.Container;
                 }
                 if (prefab.TryGetComponent<IDestructible>(out _))
                 {

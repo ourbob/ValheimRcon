@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace ValheimRcon.Commands
 {
-    [Exclude]
+    //[Exclude]
     internal class MoveObjectById : RconCommand
     {
         public override string Command => "moveObjectById";

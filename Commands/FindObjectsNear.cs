@@ -55,7 +55,6 @@ namespace ValheimRcon.Commands
                     {
                         return false;
                     }
-
                     return ZdoUtils.MatchesCriteria(zdo, creatorId, id, tag, prefab);
                 })
                 .ToArray();
